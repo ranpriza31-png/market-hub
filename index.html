@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מרכז השוק — חדשות ואירועי השקעות</title>
+<style>
+  :root{
+    --bg:#0a0e17; --panel:#111827; --panel2:#0f1521; --line:#1e293b;
+    --text:#e6edf3; --muted:#8b98a9; --accent:#3b82f6; --green:#22c55e;
+    --red:#ef4444; --amber:#f59e0b; --purple:#a855f7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Helvetica Neue",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1360px;margin:0 auto;padding:20px}
+
+  header.top{
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:12px;padding:6px 4px 18px;border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:40px;height:40px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--purple));
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px}
+  .brand h1{font-size:20px;letter-spacing:-.3px}
+  .brand p{font-size:12px;color:var(--muted)}
+  .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #clock{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  button.refresh{
+    background:var(--panel);color:var(--text);border:1px solid var(--line);
+    padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;
+    display:flex;align-items:center;gap:7px;transition:.15s}
+  button.refresh:hover{border-color:var(--accent);color:#fff}
+  button.refresh.spin svg{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ticker */
+  .ticker{
+    margin:16px 0 0;border:1px solid var(--line);border-radius:12px;
+    background:var(--panel);overflow:hidden;position:relative}
+  .ticker-row{display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+  .ticker-row::-webkit-scrollbar{display:none}
+  .tk{flex:1 0 auto;min-width:150px;padding:12px 16px;border-left:1px solid var(--line)}
+  .tk .nm{font-size:11px;color:var(--muted);letter-spacing:.3px}
+  .tk .px{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;direction:ltr;text-align:right}
+  .tk .ch{font-size:12px;font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
+  .up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--muted)}
+
+  .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;margin-top:18px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .panel-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;border-bottom:1px solid var(--line)}
+  .panel-head h2{font-size:15px;display:flex;align-items:center;gap:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .dot.g{background:var(--green)} .dot.a{background:var(--amber)}
+  .panel-head .meta{font-size:11px;color:var(--muted)}
+
+  /* filters */
+  .filters{display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12px;padding:5px 11px;border-radius:20px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--muted);cursor:pointer;font-weight:600;transition:.12s}
+  .chip:hover{color:var(--text)}
+  .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* news */
+  .news-list{max-height:640px;overflow-y:auto}
+  .news-item{padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:.12s;display:block}
+  .news-item:hover{background:var(--panel2)}
+  .news-item:last-child{border-bottom:none}
+  .ni-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .src{font-size:10px;font-weight:700;letter-spacing:.3px;
+    padding:2px 7px;border-radius:5px;background:rgba(59,130,246,.15);color:#7ab0ff}
+  .ago{font-size:11px;color:var(--muted)}
+  .news-item h3{font-size:14.5px;font-weight:650;line-height:1.4;margin-bottom:5px}
+  .news-item p{font-size:12.5px;color:var(--muted);display:-webkit-box;
+    -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* events */
+  .events-list{max-height:640px;overflow-y:auto}
+  .ev{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);align-items:flex-start}
+  .ev:last-child{border-bottom:none}
+  .ev-date{flex:0 0 52px;text-align:center;background:var(--panel2);border:1px solid var(--line);
+    border-radius:9px;padding:6px 4px}
+  .ev-date .m{font-size:10px;color:var(--red);font-weight:700;letter-spacing:.3px}
+  .ev-date .d{font-size:19px;font-weight:800;line-height:1.1}
+  .ev-body{flex:1;min-width:0}
+  .ev-body h4{font-size:13.5px;font-weight:650;margin-bottom:2px}
+  .ev-body .desc{font-size:11.5px;color:var(--muted)}
+  .ev-tags{display:flex;gap:6px;align-items:center;margin-top:5px;flex-wrap:wrap}
+  .cd{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .cd.soon{background:rgba(239,68,68,.15);color:#ff8080}
+  .cd.week{background:rgba(245,158,11,.15);color:#fbbf24}
+  .cd.later{background:rgba(139,152,169,.13);color:var(--muted)}
+  .cat{font-size:10px;padding:2px 7px;border-radius:5px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--muted);font-weight:600}
+
+  .loading,.err{padding:26px 16px;text-align:center;color:var(--muted);font-size:13px}
+  .err{color:#ff9a9a}
+  .skel{height:60px;margin:12px 16px;border-radius:8px;
+    background:linear-gradient(90deg,var(--panel2) 25%,#1a2436 50%,var(--panel2) 75%);
+    background-size:200% 100%;animation:shim 1.4s infinite}
+  @keyframes shim{to{background-position:-200% 0}}
+
+  footer{margin:26px 4px 10px;padding-top:16px;border-top:1px solid var(--line);
+    font-size:11.5px;color:var(--muted);line-height:1.8}
+  footer b{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">M</div>
+      <div>
+        <h1>מרכז השוק</h1>
+        <p>כל חדשות ואירועי ההשקעות במקום אחד</p>
+      </div>
+    </div>
+    <div class="controls">
+      <span id="clock"></span>
+      <button class="refresh" id="refreshBtn" onclick="loadAll()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+        רענון
+      </button>
+    </div>
+  </header>
+
+  <!-- מדדי שוק -->
+  <div class="ticker">
+    <div class="ticker-row" id="ticker">
+      <div class="tk"><div class="nm">טוען נתוני שוק…</div><div class="px">—</div></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- חדשות -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2><span class="dot g"></span> חדשות מתפרצות</h2>
+        <span class="meta" id="newsMeta">—</span>
+      </div>
+      <div class="filters" id="newsFilters"></div>
+      <div class="news-list" id="news">
+        <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
+      </div>
+    </section>
+
+    <!-- אירועים -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2><span class="dot a"></span> אירועים קרובים</h2>
+        <span class="meta">ממוין לפי הקרוב ביותר</span>
+      </div>
+      <div class="events-list" id="events"></div>
+    </section>
+  </div>
+
+  <footer>
+    <b>מקורות:</b> CNBC, MarketWatch, Yahoo Finance, Investing.com, Seeking Alpha (חדשות) · CoinGecko ו‑Yahoo Finance (מחירים) · לוחות הזמנים של הפדרל ריזרב ו‑BLS (אירועים).<br>
+    המחירים והכותרות מתעדכנים בזמן אמת בכל פתיחה או רענון של הדף. הפיד המלא של בלומברג דורש מנוי בתשלום, ולכן כיסוי מקביל נשלף מהמקורות החינמיים והאמינים לעיל. תקצירי החדשות הם של המפרסמים עצמם. אין לראות בכך ייעוץ השקעות.
+  </footer>
+</div>
+
+<script>
+/* ---------------- הגדרות ---------------- */
+const PROXIES = [
+  u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  u => "https://corsproxy.io/?url=" + encodeURIComponent(u),
+  u => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u)
+];
+
+async function proxiedFetch(url, asText){
+  let lastErr;
+  for(const p of PROXIES){
+    try{
+      const r = await fetch(p(url), {cache:"no-store"});
+      if(!r.ok) throw new Error(r.status);
+      return asText ? await r.text() : await r.json();
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr;
+}
+
+/* ---------------- מדדי שוק ---------------- */
+const YSYMS = [
+  {s:"^GSPC", nm:"S&P 500"}, {s:"^IXIC", nm:"נאסד\"ק"}, {s:"^DJI", nm:"דאו ג'ונס"},
+  {s:"^VIX", nm:"מדד הפחד VIX"}, {s:"GC=F", nm:"זהב"}, {s:"CL=F", nm:"נפט גולמי"},
+  {s:"^TNX", nm:"אג\"ח 10 שנים"}, {s:"DX-Y.NYB", nm:"דולר (DXY)"}
+];
+
+function fmtNum(n){
+  if(n>=1000) return n.toLocaleString("en-US",{maximumFractionDigits:0});
+  if(n>=1) return n.toLocaleString("en-US",{maximumFractionDigits:2});
+  return n.toLocaleString("en-US",{maximumFractionDigits:4});
+}
+function tile(nm, px, chPct){
+  const cls = chPct>0.001?"up":chPct<-0.001?"down":"flat";
+  const arrow = chPct>0.001?"▲":chPct<-0.001?"▼":"■";
+  const sign = chPct>0?"+":"";
+  return `<div class="tk"><div class="nm">${nm}</div>
+    <div class="px">${px}</div>
+    <div class="ch ${cls}">${arrow} ${sign}${chPct.toFixed(2)}%</div></div>`;
+}
+
+async function loadMarkets(){
+  const el = document.getElementById("ticker");
+  const tiles = [];
+  // קריפטו דרך CoinGecko (CORS מובנה)
+  try{
+    const c = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true",{cache:"no-store"}).then(r=>r.json());
+    if(c.bitcoin) tiles.push(tile("ביטקוין","$"+fmtNum(c.bitcoin.usd),c.bitcoin.usd_24h_change||0));
+    if(c.ethereum) tiles.push(tile("את'ריום","$"+fmtNum(c.ethereum.usd),c.ethereum.usd_24h_change||0));
+  }catch(e){}
+  // מדדים וסחורות דרך Yahoo עם פרוקסי
+  try{
+    const url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols="+YSYMS.map(y=>encodeURIComponent(y.s)).join(",");
+    const data = await proxiedFetch(url,false);
+    const rows = (data && data.quoteResponse && data.quoteResponse.result) || [];
+    const byS = {}; rows.forEach(r=>byS[r.symbol]=r);
+    for(const y of YSYMS){
+      const q = byS[y.s];
+      if(q && q.regularMarketPrice!=null){
+        tiles.push(tile(y.nm, fmtNum(q.regularMarketPrice), q.regularMarketChangePercent||0));
+      }
+    }
+  }catch(e){
+    for(const y of YSYMS){
+      try{
+        const d = await proxiedFetch("https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(y.s),false);
+        const m = d.chart.result[0].meta;
+        const ch = ((m.regularMarketPrice-m.chartPreviousClose)/m.chartPreviousClose)*100;
+        tiles.push(tile(y.nm, fmtNum(m.regularMarketPrice), ch));
+      }catch(e2){}
+    }
+  }
+  el.innerHTML = tiles.length ? tiles.join("") :
+    `<div class="tk"><div class="nm">שוק</div><div class="px" style="font-size:13px;color:var(--muted)">הפיד אינו זמין — נסו לרענן</div></div>`;
+}
+
+/* ---------------- חדשות ---------------- */
+const FEEDS = [
+  {src:"CNBC", url:"https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839069"},
+  {src:"CNBC", url:"https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664"},
+  {src:"MarketWatch", url:"http://feeds.content.dowjones.io/public/rss/mw_topstories"},
+  {src:"MarketWatch", url:"http://feeds.content.dowjones.io/public/rss/mw_marketpulse"},
+  {src:"Yahoo", url:"https://finance.yahoo.com/news/rssindex"},
+  {src:"Investing", url:"https://www.investing.com/rss/news_25.rss"},
+  {src:"Investing", url:"https://www.investing.com/rss/news_285.rss"},
+  {src:"Seeking Alpha", url:"https://seekingalpha.com/market_currents.xml"}
+];
+let ALL_NEWS = [], NEWS_FILTER = "הכל";
+
+function stripHtml(s){ const d=document.createElement("div"); d.innerHTML=s||""; return (d.textContent||"").trim(); }
+function timeAgo(d){
+  const s=(Date.now()-d)/1000;
+  if(s<60) return "כעת";
+  if(s<3600) return "לפני "+Math.floor(s/60)+" דק'";
+  if(s<86400) return "לפני "+Math.floor(s/3600)+" שע'";
+  return "לפני "+Math.floor(s/86400)+" ימים";
+}
+
+async function fetchFeed(f){
+  try{
+    const xml = await proxiedFetch(f.url, true);
+    const doc = new DOMParser().parseFromString(xml,"text/xml");
+    const items = [...doc.querySelectorAll("item, entry")].slice(0,15);
+    return items.map(it=>{
+      const t = it.querySelector("title")?.textContent || "";
+      let link = it.querySelector("link")?.textContent || it.querySelector("link")?.getAttribute("href") || "";
+      const desc = it.querySelector("description, summary, content")?.textContent || "";
+      const pub = it.querySelector("pubDate, published, updated")?.textContent || "";
+      const ts = pub ? new Date(pub).getTime() : Date.now();
+      return {src:f.src, title:stripHtml(t), link, summary:stripHtml(desc).slice(0,220), ts:isNaN(ts)?Date.now():ts};
+    }).filter(x=>x.title && x.link);
+  }catch(e){ return []; }
+}
+
+async function loadNews(){
+  const results = await Promise.all(FEEDS.map(fetchFeed));
+  let all = results.flat();
+  const seen = new Set(); all = all.filter(n=>{ const k=n.title.toLowerCase().slice(0,60); if(seen.has(k))return false; seen.add(k); return true; });
+  all.sort((a,b)=>b.ts-a.ts);
+  ALL_NEWS = all;
+  buildNewsFilters();
+  renderNews();
+  document.getElementById("newsMeta").textContent = all.length ? all.length+" ידיעות · עודכן "+new Date().toLocaleTimeString("he-IL", {hour:"2-digit",minute:"2-digit"}) : "אין נתונים";
+}
+
+function buildNewsFilters(){
+  const srcs = ["הכל", ...[...new Set(ALL_NEWS.map(n=>n.src))]];
+  document.getElementById("newsFilters").innerHTML = srcs.map(s=>
+    `<span class="chip ${s===NEWS_FILTER?'active':''}" onclick="setFilter('${s}')">${s}</span>`).join("");
+}
+function setFilter(s){ NEWS_FILTER=s; buildNewsFilters(); renderNews(); }
+
+function renderNews(){
+  const box = document.getElementById("news");
+  const list = NEWS_FILTER==="הכל" ? ALL_NEWS : ALL_NEWS.filter(n=>n.src===NEWS_FILTER);
+  if(!list.length){ box.innerHTML = `<div class="err">לא ניתן לטעון כותרות כרגע. לחצו רענון — פידים חינמיים לעיתים מגבילים קצב.</div>`; return; }
+  box.innerHTML = list.slice(0,60).map(n=>
+    `<a class="news-item" href="${n.link}" target="_blank" rel="noopener">
+      <div class="ni-top"><span class="src">${n.src}</span><span class="ago">${timeAgo(n.ts)}</span></div>
+      <h3>${n.title}</h3>
+      ${n.summary?`<p>${n.summary}</p>`:""}
+    </a>`).join("");
+}
+
+/* ---------------- אירועים (ממוין לפי הקרוב) ---------------- */
+const MONTHS = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
+
+// מועדי החלטת ריבית של ה‑FOMC לשנת 2026 (היום השני של כל ישיבה)
+const FOMC = ["2026-01-28","2026-03-18","2026-04-29","2026-06-17","2026-07-29",
+  "2026-09-16","2026-10-28","2026-12-09","2027-01-27"];
+
+function nthWeekday(year, month, weekday, n){
+  const first = new Date(year, month, 1);
+  let day = 1 + ((weekday - first.getDay() + 7) % 7) + (n-1)*7;
+  return new Date(year, month, day);
+}
+function firstFriday(y,m){ return nthWeekday(y,m,5,1); }
+function thirdFriday(y,m){ return nthWeekday(y,m,5,3); }
+
+function buildEvents(){
+  const now = new Date(); now.setHours(0,0,0,0);
+  const ev = [];
+  FOMC.forEach(d=> ev.push({date:new Date(d+"T00:00:00"), title:"החלטת ריבית של הפד (FOMC)", desc:"הכרזת ריבית של הפדרל ריזרב ומסיבת עיתונאים", cat:"פד"}));
+  for(let i=0;i<6;i++){
+    const dt = new Date(now.getFullYear(), now.getMonth()+i, 1);
+    const y=dt.getFullYear(), m=dt.getMonth();
+    ev.push({date:firstFriday(y,m), title:"דוח התעסוקה בארה\"ב", desc:"נתוני שכר לא‑חקלאי ושיעור אבטלה (BLS)", cat:"מאקרו"});
+    ev.push({date:new Date(y,m,12), title:"מדד המחירים לצרכן (CPI)", desc:"נתוני אינפלציה בארה\"ב (בערך אמצע החודש)", cat:"מאקרו"});
+    ev.push({date:new Date(y,m,13), title:"מדד המחירים ליצרן (PPI)", desc:"מדד מחירי יצרן (בקירוב)", cat:"מאקרו"});
+    ev.push({date:thirdFriday(y,m), title:"פקיעת אופציות", desc:"פקיעה חודשית של אופציות מניות ומדדים", cat:"שווקים"});
+    ev.push({date:new Date(y,m,26), title:"תמ\"ג / PCE", desc:"צמיחה ומדד האינפלציה המועדף על הפד (בקירוב)", cat:"מאקרו"});
+  }
+  const future = ev.filter(e=> e.date >= now).sort((a,b)=> a.date-b.date);
+  return future.slice(0,26);
+}
+
+function renderEvents(){
+  const box = document.getElementById("events");
+  const evs = buildEvents();
+  const now = new Date(); now.setHours(0,0,0,0);
+  box.innerHTML = evs.map(e=>{
+    const days = Math.round((e.date-now)/86400000);
+    const cd = days===0?"היום":days===1?"מחר":"בעוד "+days+" ימים";
+    const cls = days<=3?"soon":days<=10?"week":"later";
+    return `<div class="ev">
+      <div class="ev-date"><div class="m">${MONTHS[e.date.getMonth()]}</div><div class="d">${e.date.getDate()}</div></div>
+      <div class="ev-body">
+        <h4>${e.title}</h4>
+        <div class="desc">${e.desc}</div>
+        <div class="ev-tags"><span class="cd ${cls}">${cd}</span><span class="cat">${e.cat}</span></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------------- ניהול ---------------- */
+function tickClock(){
+  document.getElementById("clock").textContent = new Date().toLocaleString("he-IL", {weekday:"short", month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"});
+}
+async function loadAll(){
+  const btn = document.getElementById("refreshBtn"); btn.classList.add("spin");
+  renderEvents();
+  await Promise.all([loadMarkets(), loadNews()]);
+  btn.classList.remove("spin");
+}
+tickClock(); setInterval(tickClock, 30000);
+loadAll();
+setInterval(loadAll, 5*60*1000);
+</script>
+</body>
+</html>
