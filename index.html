@@ -209,37 +209,29 @@ function tile(nm, px, chPct){
     <div class="ch ${cls}">${arrow} ${sign}${chPct.toFixed(2)}%</div></div>`;
 }
 
+async function fetchQuote(y){
+  try{
+    const d = await proxiedFetch("https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(y.s),false);
+    const m = d.chart.result[0].meta;
+    const prev = m.chartPreviousClose!=null ? m.chartPreviousClose : m.previousClose;
+    const ch = prev ? ((m.regularMarketPrice-prev)/prev)*100 : 0;
+    return tile(y.nm, fmtNum(m.regularMarketPrice), ch);
+  }catch(e){ return null; }
+}
 async function loadMarkets(){
   const el = document.getElementById("ticker");
   const tiles = [];
-  // קריפטו דרך CoinGecko (CORS מובנה)
+  const render = ()=>{ if(tiles.length) el.innerHTML = tiles.join(""); };
+  // קריפטו דרך CoinGecko (CORS מובנה) — מוצג מייד
   try{
     const c = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true",{cache:"no-store"}).then(r=>r.json());
     if(c.bitcoin) tiles.push(tile("ביטקוין","$"+fmtNum(c.bitcoin.usd),c.bitcoin.usd_24h_change||0));
     if(c.ethereum) tiles.push(tile("את'ריום","$"+fmtNum(c.ethereum.usd),c.ethereum.usd_24h_change||0));
+    render();
   }catch(e){}
-  // מדדים וסחורות דרך Yahoo עם פרוקסי
-  try{
-    const url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols="+YSYMS.map(y=>encodeURIComponent(y.s)).join(",");
-    const data = await proxiedFetch(url,false);
-    const rows = (data && data.quoteResponse && data.quoteResponse.result) || [];
-    const byS = {}; rows.forEach(r=>byS[r.symbol]=r);
-    for(const y of YSYMS){
-      const q = byS[y.s];
-      if(q && q.regularMarketPrice!=null){
-        tiles.push(tile(y.nm, fmtNum(q.regularMarketPrice), q.regularMarketChangePercent||0));
-      }
-    }
-  }catch(e){
-    for(const y of YSYMS){
-      try{
-        const d = await proxiedFetch("https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(y.s),false);
-        const m = d.chart.result[0].meta;
-        const ch = ((m.regularMarketPrice-m.chartPreviousClose)/m.chartPreviousClose)*100;
-        tiles.push(tile(y.nm, fmtNum(m.regularMarketPrice), ch));
-      }catch(e2){}
-    }
-  }
+  // מדדים וסחורות דרך Yahoo — נטענים במקביל (מהיר)
+  const results = await Promise.all(YSYMS.map(fetchQuote));
+  results.forEach(t=>{ if(t) tiles.push(t); });
   el.innerHTML = tiles.length ? tiles.join("") :
     `<div class="tk"><div class="nm">שוק</div><div class="px" style="font-size:13px;color:var(--muted)">הפיד אינו זמין — נסו לרענן</div></div>`;
 }
