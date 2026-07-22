@@ -51,6 +51,17 @@
   .tk .ch{font-size:12px;font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
   .up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--muted)}
 
+  /* featured latest-with-summary */
+  .featured{margin-top:18px}
+  .featured .fhead{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:650;margin:0 4px 10px}
+  .fcards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:900px){.fcards{grid-template-columns:1fr}}
+  .fcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:block;transition:.12s}
+  .fcard:hover{border-color:var(--accent)}
+  .fcard .ni-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .fcard h3{font-size:14.5px;font-weight:650;line-height:1.4;margin-bottom:6px}
+  .fcard p{font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
   .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;margin-top:18px}
   @media(max-width:900px){.grid{grid-template-columns:1fr}}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -137,6 +148,12 @@
     <div class="ticker-row" id="ticker">
       <div class="tk"><div class="nm">טוען נתוני שוק…</div><div class="px">—</div></div>
     </div>
+  </div>
+
+  <!-- האחרונות עם תקציר -->
+  <div class="featured">
+    <div class="fhead"><span class="dot g"></span> האחרונות — עם תקציר</div>
+    <div class="fcards" id="featured"></div>
   </div>
 
   <div class="grid">
@@ -304,9 +321,24 @@ function buildNewsFilters(){
 }
 function setFilter(s){ NEWS_FILTER=s; buildNewsFilters(); renderNews(); }
 
+function renderFeatured(list){
+  const box = document.getElementById("featured");
+  if(!box) return;
+  const withSummary = list.filter(n=> n.summary && n.summary.length > 40).slice(0,3);
+  const pick = withSummary.length ? withSummary : list.slice(0,3);
+  if(!pick.length){ box.innerHTML = `<div class="loading" style="grid-column:1/-1">אין כרגע כותרות עם תקציר.</div>`; return; }
+  box.innerHTML = pick.map(n=>
+    `<a class="fcard" href="${n.link}" target="_blank" rel="noopener">
+      <div class="ni-top"><span class="src">${n.src}</span><span class="ago">${timeAgo(n.ts)}</span></div>
+      <h3>${n.title}</h3>
+      ${n.summary?`<p>${n.summary}</p>`:""}
+    </a>`).join("");
+}
+
 function renderNews(){
   const box = document.getElementById("news");
   const list = NEWS_FILTER==="הכל" ? ALL_NEWS : ALL_NEWS.filter(n=>n.tags.includes(NEWS_FILTER));
+  renderFeatured(list);
   if(!list.length){
     box.innerHTML = ALL_NEWS.length
       ? `<div class="loading">אין כרגע כותרות אחרונות על המכשיר הזה. נסו מכשיר אחר או "הכל".</div>`
