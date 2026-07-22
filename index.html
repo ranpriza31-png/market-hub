@@ -120,7 +120,7 @@
       <div class="logo">M</div>
       <div>
         <h1>מרכז השוק</h1>
-        <p>כל חדשות ואירועי ההשקעות במקום אחד</p>
+        <p>מעקב ממוקד: נאסד"ק 100 · דאו · זהב · נפט · טסלה · נטפליקס · גוגל · אנבידיה · MSTY</p>
       </div>
     </div>
     <div class="controls">
@@ -163,7 +163,7 @@
   </div>
 
   <footer>
-    <b>מקורות:</b> CNBC, MarketWatch, Yahoo Finance, Investing.com, Seeking Alpha (חדשות) · CoinGecko ו‑Yahoo Finance (מחירים) · לוחות הזמנים של הפדרל ריזרב ו‑BLS (אירועים).<br>
+    <b>מקורות:</b> Yahoo Finance, CNBC, MarketWatch, Investing.com, Seeking Alpha (חדשות) · Yahoo Finance (מחירים) · לוחות הזמנים של הפדרל ריזרב ו‑BLS (אירועים).<br>
     המחירים והכותרות מתעדכנים בזמן אמת בכל פתיחה או רענון של הדף. הפיד המלא של בלומברג דורש מנוי בתשלום, ולכן כיסוי מקביל נשלף מהמקורות החינמיים והאמינים לעיל. תקצירי החדשות הם של המפרסמים עצמם. אין לראות בכך ייעוץ השקעות.
   </footer>
 </div>
@@ -189,10 +189,17 @@ async function proxiedFetch(url, asText){
 }
 
 /* ---------------- מדדי שוק ---------------- */
-const YSYMS = [
-  {s:"^GSPC", nm:"S&P 500"}, {s:"^IXIC", nm:"נאסד\"ק"}, {s:"^DJI", nm:"דאו ג'ונס"},
-  {s:"^VIX", nm:"מדד הפחד VIX"}, {s:"GC=F", nm:"זהב"}, {s:"CL=F", nm:"נפט גולמי"},
-  {s:"^TNX", nm:"אג\"ח 10 שנים"}, {s:"DX-Y.NYB", nm:"דולר (DXY)"}
+// רשימת המעקב שלך — 9 המכשירים
+const WATCH = [
+  {key:"NAS100", label:'נאסד"ק 100', ysym:"^NDX",  kws:["nasdaq","nas100","ndx","qqq"]},
+  {key:"US30",   label:"דאו ג'ונס (US30)", ysym:"^DJI", kws:["dow","us30","djia","dow jones"]},
+  {key:"Gold",   label:"זהב",        ysym:"GC=F", kws:["gold","xau","bullion"]},
+  {key:"Oil",    label:"נפט",        ysym:"CL=F", kws:["oil","crude","wti","brent","opec"]},
+  {key:"TSLA",   label:"טסלה",       ysym:"TSLA", usd:true, kws:["tesla","tsla","musk"]},
+  {key:"NFLX",   label:"נטפליקס",    ysym:"NFLX", usd:true, kws:["netflix","nflx"]},
+  {key:"GOOGL",  label:"גוגל",       ysym:"GOOGL", usd:true, kws:["google","alphabet","googl","goog"]},
+  {key:"NVDA",   label:"אנבידיה",    ysym:"NVDA", usd:true, kws:["nvidia","nvda","jensen huang"]},
+  {key:"MSTY",   label:"MSTY",       ysym:"MSTY", usd:true, kws:["msty","microstrategy","mstr","yieldmax","saylor"]}
 ];
 
 function fmtNum(n){
@@ -209,45 +216,46 @@ function tile(nm, px, chPct){
     <div class="ch ${cls}">${arrow} ${sign}${chPct.toFixed(2)}%</div></div>`;
 }
 
-async function fetchQuote(y){
+async function fetchQuote(w){
   try{
-    const d = await proxiedFetch("https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(y.s),false);
+    const d = await proxiedFetch("https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(w.ysym),false);
     const m = d.chart.result[0].meta;
     const prev = m.chartPreviousClose!=null ? m.chartPreviousClose : m.previousClose;
     const ch = prev ? ((m.regularMarketPrice-prev)/prev)*100 : 0;
-    return tile(y.nm, fmtNum(m.regularMarketPrice), ch);
+    const px = (w.usd?"$":"")+fmtNum(m.regularMarketPrice);
+    return tile(w.label, px, ch);
   }catch(e){ return null; }
 }
 async function loadMarkets(){
   const el = document.getElementById("ticker");
-  const tiles = [];
-  const render = ()=>{ if(tiles.length) el.innerHTML = tiles.join(""); };
-  // קריפטו דרך CoinGecko (CORS מובנה) — מוצג מייד
-  try{
-    const c = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true",{cache:"no-store"}).then(r=>r.json());
-    if(c.bitcoin) tiles.push(tile("ביטקוין","$"+fmtNum(c.bitcoin.usd),c.bitcoin.usd_24h_change||0));
-    if(c.ethereum) tiles.push(tile("את'ריום","$"+fmtNum(c.ethereum.usd),c.ethereum.usd_24h_change||0));
-    render();
-  }catch(e){}
-  // מדדים וסחורות דרך Yahoo — נטענים במקביל (מהיר)
-  const results = await Promise.all(YSYMS.map(fetchQuote));
-  results.forEach(t=>{ if(t) tiles.push(t); });
+  // כל 9 המכשירים דרך Yahoo — נטענים במקביל (מהיר)
+  const results = await Promise.all(WATCH.map(fetchQuote));
+  const tiles = results.filter(Boolean);
   el.innerHTML = tiles.length ? tiles.join("") :
     `<div class="tk"><div class="nm">שוק</div><div class="px" style="font-size:13px;color:var(--muted)">הפיד אינו זמין — נסו לרענן</div></div>`;
 }
 
 /* ---------------- חדשות ---------------- */
+// חדשות ממוקדות לרשימת המעקב: פיד ייעודי למניות שלך מ‑Yahoo + פידים כלליים למדדים/סחורות
 const FEEDS = [
+  {src:"Yahoo", url:"https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA,NVDA,NFLX,GOOGL,MSTY&region=US&lang=en-US"},
   {src:"CNBC", url:"https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839069"},
   {src:"CNBC", url:"https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664"},
   {src:"MarketWatch", url:"http://feeds.content.dowjones.io/public/rss/mw_topstories"},
   {src:"MarketWatch", url:"http://feeds.content.dowjones.io/public/rss/mw_marketpulse"},
-  {src:"Yahoo", url:"https://finance.yahoo.com/news/rssindex"},
   {src:"Investing", url:"https://www.investing.com/rss/news_25.rss"},
   {src:"Investing", url:"https://www.investing.com/rss/news_285.rss"},
   {src:"Seeking Alpha", url:"https://seekingalpha.com/market_currents.xml"}
 ];
 let ALL_NEWS = [], NEWS_FILTER = "הכל";
+
+// תיוג ידיעה לפי המכשירים שהיא מזכירה
+function tagItem(text){
+  const t = (text||"").toLowerCase();
+  const tags = [];
+  for(const w of WATCH){ if(w.kws.some(k=>t.includes(k))) tags.push(w.key); }
+  return tags;
+}
 
 function stripHtml(s){ const d=document.createElement("div"); d.innerHTML=s||""; return (d.textContent||"").trim(); }
 function timeAgo(d){
@@ -269,7 +277,9 @@ async function fetchFeed(f){
       const desc = it.querySelector("description, summary, content")?.textContent || "";
       const pub = it.querySelector("pubDate, published, updated")?.textContent || "";
       const ts = pub ? new Date(pub).getTime() : Date.now();
-      return {src:f.src, title:stripHtml(t), link, summary:stripHtml(desc).slice(0,220), ts:isNaN(ts)?Date.now():ts};
+      const title = stripHtml(t);
+      const summary = stripHtml(desc).slice(0,220);
+      return {src:f.src, title, link, summary, ts:isNaN(ts)?Date.now():ts, tags:tagItem(title+" "+summary)};
     }).filter(x=>x.title && x.link);
   }catch(e){ return []; }
 }
@@ -286,16 +296,23 @@ async function loadNews(){
 }
 
 function buildNewsFilters(){
-  const srcs = ["הכל", ...[...new Set(ALL_NEWS.map(n=>n.src))]];
-  document.getElementById("newsFilters").innerHTML = srcs.map(s=>
-    `<span class="chip ${s===NEWS_FILTER?'active':''}" onclick="setFilter('${s}')">${s}</span>`).join("");
+  const chips = [{key:"הכל",label:"הכל"}, ...WATCH.map(w=>({key:w.key,label:w.label}))];
+  document.getElementById("newsFilters").innerHTML = chips.map(c=>{
+    const n = c.key==="הכל" ? ALL_NEWS.length : ALL_NEWS.filter(x=>x.tags.includes(c.key)).length;
+    return `<span class="chip ${c.key===NEWS_FILTER?'active':''}" onclick="setFilter('${c.key}')">${c.label}${n?` <b style="opacity:.7">${n}</b>`:""}</span>`;
+  }).join("");
 }
 function setFilter(s){ NEWS_FILTER=s; buildNewsFilters(); renderNews(); }
 
 function renderNews(){
   const box = document.getElementById("news");
-  const list = NEWS_FILTER==="הכל" ? ALL_NEWS : ALL_NEWS.filter(n=>n.src===NEWS_FILTER);
-  if(!list.length){ box.innerHTML = `<div class="err">לא ניתן לטעון כותרות כרגע. לחצו רענון — פידים חינמיים לעיתים מגבילים קצב.</div>`; return; }
+  const list = NEWS_FILTER==="הכל" ? ALL_NEWS : ALL_NEWS.filter(n=>n.tags.includes(NEWS_FILTER));
+  if(!list.length){
+    box.innerHTML = ALL_NEWS.length
+      ? `<div class="loading">אין כרגע כותרות אחרונות על המכשיר הזה. נסו מכשיר אחר או "הכל".</div>`
+      : `<div class="err">לא ניתן לטעון כותרות כרגע. לחצו רענון — פידים חינמיים לעיתים מגבילים קצב.</div>`;
+    return;
+  }
   box.innerHTML = list.slice(0,60).map(n=>
     `<a class="news-item" href="${n.link}" target="_blank" rel="noopener">
       <div class="ni-top"><span class="src">${n.src}</span><span class="ago">${timeAgo(n.ts)}</span></div>
